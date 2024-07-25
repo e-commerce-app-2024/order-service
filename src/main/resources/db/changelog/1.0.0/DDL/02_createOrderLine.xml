@@ -1,0 +1,31 @@
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet id="create_order_line" author="Ahmed.Baz" labels="e-commerce-app">
+        <sql>
+            CREATE TABLE ORDER_LINE
+            (
+                ID               INT8 NOT NULL,
+                PRODUCT_ID       INT8 NOT NULL,
+                ORDER_ID         INT8 NOT NULL,
+                QUANTITY         INT8 NOT NULL,
+                CREATED_BY       INT8,
+                LAST_MODIFIED_BY INT8,
+                CREATED_AT       TIMESTAMP(6) DEFAULT CURRENT_DATE,
+                DELETED_AT       TIMESTAMP(6),
+                DELETED_BY       INT8,
+                LAST_MODIFIED_AT TIMESTAMP(6),
+                CONSTRAINT ORDER_LINE_ID_PKEY PRIMARY KEY (ID)
+            );
+        </sql>
+        <sql>
+            CREATE SEQUENCE ORDER_LINE_SEQ
+                INCREMENT 1
+                START 1;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
