@@ -5,7 +5,7 @@ import lombok.Builder;
 
 @Builder
 public record OrderLine(
-        Long orderId,
+        Long id,
         Long productId,
         Long quantity
 ) {

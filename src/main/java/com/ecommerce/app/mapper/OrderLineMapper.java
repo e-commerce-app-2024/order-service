@@ -15,6 +15,8 @@ public interface OrderLineMapper {
 
     OrderLine toOrderLine(OrderLineEntity order);
 
+    List<OrderLine> toOrderLine(List<OrderLineEntity> orders);
+
     OrderLineEntity toOrderLineEntity(OrderLine order);
 
     List<OrderLineEntity> toOrderLineEntity(List<OrderLine> orders);

@@ -2,6 +2,7 @@ package com.ecommerce.app.hanlder;
 
 
 import com.ecommerce.app.exception.CustomerIntegrationException;
+import com.ecommerce.app.exception.OrderLineNotFoundException;
 import com.ecommerce.app.exception.OrderNotFoundException;
 import com.ecommerce.app.payload.AppResponse;
 import com.ecommerce.app.payload.Error;
@@ -40,6 +41,13 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(OrderNotFoundException.class)
     public ResponseEntity<Object> handleOrderNotFoundException(OrderNotFoundException ex, WebRequest request) {
+        Error error = new Error(ex.getMessage(), HttpStatus.NOT_FOUND);
+        AppResponse appResponse = AppResponse.failedAppResponse(error, HttpStatus.NOT_FOUND);
+        return responseEntity(appResponse);
+    }
+
+    @ExceptionHandler(OrderLineNotFoundException.class)
+    public ResponseEntity<Object> handleOrderLineNotFoundException(OrderLineNotFoundException ex, WebRequest request) {
         Error error = new Error(ex.getMessage(), HttpStatus.NOT_FOUND);
         AppResponse appResponse = AppResponse.failedAppResponse(error, HttpStatus.NOT_FOUND);
         return responseEntity(appResponse);
