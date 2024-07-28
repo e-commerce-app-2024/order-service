@@ -1,15 +1,19 @@
 package com.ecommerce.app.service;
 
-import com.ecommerce.app.dto.OrderLine;
-import com.ecommerce.app.dto.OrderRequest;
-import com.ecommerce.app.dto.OrderResponse;
+import com.ecommerce.app.dto.*;
+import com.ecommerce.app.exception.OrderNotFoundException;
 import com.ecommerce.app.integration.customer.adapter.CustomerAdapter;
 import com.ecommerce.app.integration.product.adapter.ProductAdapter;
 import com.ecommerce.app.integration.product.model.ProductPurchaseResponse;
+import com.ecommerce.app.kafka.OrderProducerService;
 import com.ecommerce.app.mapper.OrderMapper;
 import com.ecommerce.app.model.OrderEntity;
+import com.ecommerce.app.payload.PageResponse;
 import com.ecommerce.app.repo.OrderRepo;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -26,15 +30,16 @@ public class OrderServiceImpl implements OrderService {
     private final OrderLineService orderLineService;
     private final CustomerAdapter customerAdapter;
     private final ProductAdapter productAdapter;
+    private final OrderProducerService orderProducerService;
 
     @Override
     public OrderResponse createOrder(OrderRequest request) {
 
         // check the customer
-        var customer = customerAdapter.findCustomer(request.customerId());
+        var customer = this.customerAdapter.findCustomer(request.customerId());
 
         // purchase the product
-        var productPurchaseRes = productAdapter.purchaseProduct(request.products());
+        var productPurchaseRes = this.productAdapter.purchaseProduct(request.products());
 
         // persist the order
         OrderEntity orderEntity = saveOrder(request, productPurchaseRes);
@@ -44,19 +49,39 @@ public class OrderServiceImpl implements OrderService {
 
         // TODO:start the payment process
 
-        // TODO:send notification to customer [order confirmation]
+        // send notification to customer [order confirmation]
+        OrderConfirmation orderConfirmation = OrderConfirmation
+                .builder()
+                .orderReference(orderEntity.getReference())
+                .customer(customer)
+                .PaymentMethod(orderEntity.getPaymentMethod())
+                .products(productPurchaseRes)
+                .totalAmount(getTotalAmount(productPurchaseRes))
+                .build();
+        this.orderProducerService.sendOrderConfirmation(orderConfirmation);
 
-        // TODO:send notification to customer [payment success]
+        return orderMapper.toResponse(orderEntity);
+    }
 
-        return OrderResponse.builder().build();
+    @Override
+    public PageResponse<OrderResponse> getCustomerOrders(OrderFilterRequest request) {
+        Sort sort = Sort.by(request.sort() != null ? request.sort() : Sort.Direction.DESC, request.sortBy() != null ? request.sortBy() : "createdAt");
+        PageRequest pageRequest = PageRequest.of(request.index().intValue(), request.size().intValue(), sort);
+        Page<OrderEntity> all = orderRepo.findByCustomerId(request.customerId(), pageRequest);
+        return new PageResponse<>
+                (orderMapper.toResponse(all.getContent()),
+                        all.isLast(),
+                        all.getNumber(),
+                        all.getSize(),
+                        all.getTotalElements(),
+                        all.getTotalPages());
     }
 
     private OrderEntity saveOrder(OrderRequest request, List<ProductPurchaseResponse> productPurchaseResponses) {
-        OrderEntity orderEntity = orderMapper.toOrder(request);
-        double totalAmount = productPurchaseResponses.stream().mapToDouble(response -> response.totalPrice().doubleValue()).sum();
-        orderEntity.setTotalAmount(new BigDecimal(totalAmount));
+        OrderEntity orderEntity = this.orderMapper.toOrder(request);
+        orderEntity.setTotalAmount(getTotalAmount(productPurchaseResponses));
         orderEntity.setReference(UUID.randomUUID().toString());
-        return orderRepo.save(orderEntity);
+        return this.orderRepo.save(orderEntity);
     }
 
     private void saveOrderLine(List<ProductPurchaseResponse> productPurchaseRes, OrderEntity orderEntity) {
@@ -72,9 +97,21 @@ public class OrderServiceImpl implements OrderService {
         orderLineService.saveOrderLine(orderLineList, orderEntity);
     }
 
+    private BigDecimal getTotalAmount(List<ProductPurchaseResponse> productPurchaseResponses) {
+        double sum = productPurchaseResponses.stream().mapToDouble(response -> response.totalPrice().doubleValue()).sum();
+        return new BigDecimal(sum);
+    }
+
     @Override
     public OrderResponse updateOrder(Long id, OrderRequest orderRequest) {
         return null;
+    }
+
+    @Override
+    public OrderResponse getOrder(Long id) {
+        return orderRepo.findById(id)
+                .map(orderMapper::toResponse)
+                .orElseThrow(() -> new OrderNotFoundException(id));
     }
 
     @Override
