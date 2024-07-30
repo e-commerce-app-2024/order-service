@@ -19,7 +19,7 @@ public class OrderProducerServiceImpl implements OrderProducerService {
 
     @Override
     public void sendOrderConfirmation(OrderConfirmation orderConfirmation) {
-        log.info("send order confirmation");
+        log.info("send order confirmation with body: <{}>", orderConfirmation);
         try {
             Message message = MessageBuilder
                     .withPayload(orderConfirmation)

@@ -8,6 +8,7 @@ import com.ecommerce.app.integration.payment.adapter.PaymentAdapter;
 import com.ecommerce.app.integration.payment.model.PaymentRequest;
 import com.ecommerce.app.integration.product.adapter.ProductAdapter;
 import com.ecommerce.app.integration.product.model.ProductPurchaseResponse;
+import com.ecommerce.app.integration.product.model.PurchaseResponse;
 import com.ecommerce.app.kafka.OrderProducerService;
 import com.ecommerce.app.mapper.OrderMapper;
 import com.ecommerce.app.model.OrderEntity;
@@ -45,16 +46,16 @@ public class OrderServiceImpl implements OrderService {
         var customer = this.customerAdapter.findCustomer(request.customerId());
 
         // purchase the product
-        var productPurchaseRes = this.productAdapter.purchaseProduct(request.products());
+        var purchaseRes = this.productAdapter.purchaseProduct(request.products());
 
         // persist the order
-        OrderEntity orderEntity = saveOrder(request, productPurchaseRes);
+        OrderEntity orderEntity = saveOrder(request, purchaseRes);
 
         // persist the order line
-        saveOrderLine(productPurchaseRes, orderEntity);
+        saveOrderLine(purchaseRes.products(), orderEntity);
 
         // prepare the total amount
-        BigDecimal totalAmount = getTotalAmount(productPurchaseRes);
+        BigDecimal totalAmount = getTotalAmount(purchaseRes.products());
         // start the payment process
         PaymentRequest paymentRequest = PaymentRequest.builder()
                 .paymentMethod(request.paymentMethod())
@@ -74,7 +75,7 @@ public class OrderServiceImpl implements OrderService {
                 .orderReference(orderEntity.getReference())
                 .customer(customer)
                 .PaymentMethod(orderEntity.getPaymentMethod())
-                .products(productPurchaseRes)
+                .products(purchaseRes.products())
                 .totalAmount(totalAmount)
                 .build();
         this.orderProducerService.sendOrderConfirmation(orderConfirmation);
@@ -96,10 +97,11 @@ public class OrderServiceImpl implements OrderService {
                         all.getTotalPages());
     }
 
-    private OrderEntity saveOrder(OrderRequest request, List<ProductPurchaseResponse> productPurchaseResponses) {
+    private OrderEntity saveOrder(OrderRequest request, PurchaseResponse purchaseResponse) {
         OrderEntity orderEntity = this.orderMapper.toOrder(request);
-        orderEntity.setTotalAmount(getTotalAmount(productPurchaseResponses));
+        orderEntity.setTotalAmount(getTotalAmount(purchaseResponse.products()));
         orderEntity.setReference(UUID.randomUUID().toString());
+        orderEntity.setRequestId(purchaseResponse.requestId());
         return this.orderRepo.save(orderEntity);
     }
 

@@ -22,6 +22,7 @@ public class OrderEntity extends EntityBase {
     @SequenceGenerator(name = "ORDER_SEQ", sequenceName = "ORDER_SEQ", allocationSize = 1)
     private Long id;
     private String customerId;
+    private String requestId;
     private String reference;
     private BigDecimal totalAmount;
     @Enumerated(EnumType.STRING)

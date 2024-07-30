@@ -4,7 +4,7 @@ import com.ecommerce.app.dto.ProductPurchaseRequest;
 import com.ecommerce.app.exception.CustomerIntegrationException;
 import com.ecommerce.app.integration.product.client.ProductClient;
 import com.ecommerce.app.integration.product.model.CreatePurchaseRequest;
-import com.ecommerce.app.integration.product.model.ProductPurchaseResponse;
+import com.ecommerce.app.integration.product.model.PurchaseResponse;
 import com.ecommerce.app.payload.AppResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,12 +17,12 @@ public class ProductAdapter {
 
     private final ProductClient productClient;
 
-    public List<ProductPurchaseResponse> purchaseProduct(List<ProductPurchaseRequest> purchaseList) {
+    public PurchaseResponse purchaseProduct(List<ProductPurchaseRequest> purchaseList) {
         var purchaseRequest = CreatePurchaseRequest
                 .builder()
                 .purchaseList(purchaseList)
                 .build();
-        AppResponse<List<ProductPurchaseResponse>> appResponse = productClient.purchaseProduct(purchaseRequest);
+        AppResponse<PurchaseResponse> appResponse = productClient.purchaseProduct(purchaseRequest);
         if (appResponse.success()) {
             return appResponse.payload();
         } else {
