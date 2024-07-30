@@ -61,6 +61,7 @@ public class OrderServiceImpl implements OrderService {
                 .amount(totalAmount)
                 .customerId(customer.id())
                 .orderId(orderEntity.getId())
+                .orderReference(orderEntity.getReference())
                 .build();
         boolean paymentStatus = paymentAdapter.doPayment(paymentRequest);
         if (!paymentStatus) {

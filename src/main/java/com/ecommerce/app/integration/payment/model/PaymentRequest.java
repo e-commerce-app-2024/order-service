@@ -15,6 +15,8 @@ public record PaymentRequest(
         @NotNull(message = "Amount is required")
         BigDecimal amount,
         @NotNull(message = "The payment method is required")
-        PaymentMethod paymentMethod
+        PaymentMethod paymentMethod,
+        String orderReference
+
 ) {
 }
