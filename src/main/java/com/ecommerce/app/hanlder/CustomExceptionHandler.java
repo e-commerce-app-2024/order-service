@@ -4,6 +4,7 @@ package com.ecommerce.app.hanlder;
 import com.ecommerce.app.exception.CustomerIntegrationException;
 import com.ecommerce.app.exception.OrderLineNotFoundException;
 import com.ecommerce.app.exception.OrderNotFoundException;
+import com.ecommerce.app.exception.PaymentFailureException;
 import com.ecommerce.app.payload.AppResponse;
 import com.ecommerce.app.payload.Error;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,13 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleOrderNotFoundException(OrderNotFoundException ex, WebRequest request) {
         Error error = new Error(ex.getMessage(), HttpStatus.NOT_FOUND);
         AppResponse appResponse = AppResponse.failedAppResponse(error, HttpStatus.NOT_FOUND);
+        return responseEntity(appResponse);
+    }
+
+    @ExceptionHandler(PaymentFailureException.class)
+    public ResponseEntity<Object> handlePaymentFailureException(PaymentFailureException ex, WebRequest request) {
+        Error error = new Error(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        AppResponse appResponse = AppResponse.failedAppResponse(error, HttpStatus.INTERNAL_SERVER_ERROR);
         return responseEntity(appResponse);
     }
 
