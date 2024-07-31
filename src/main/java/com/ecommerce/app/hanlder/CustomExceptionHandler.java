@@ -50,7 +50,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(PaymentFailureException.class)
     public ResponseEntity<Object> handlePaymentFailureException(PaymentFailureException ex, WebRequest request) {
         Error error = new Error(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        AppResponse appResponse = AppResponse.failedAppResponse(error, HttpStatus.INTERNAL_SERVER_ERROR);
+        AppResponse appResponse = AppResponse.failedAppResponse(error, HttpStatus.INTERNAL_SERVER_ERROR, ex.getRequestId());
         return responseEntity(appResponse);
     }
 

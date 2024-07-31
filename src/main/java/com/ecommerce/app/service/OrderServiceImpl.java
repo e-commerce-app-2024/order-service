@@ -70,7 +70,7 @@ public class OrderServiceImpl implements OrderService {
         if (!paymentStatus) {
             // rollback purchaseProduct
             productProducerService.rollbackPurchaseProduct(purchaseRes.requestId());
-            throw new PaymentFailureException("payment process failed");
+            throw new PaymentFailureException("payment process failed", purchaseRes.requestId());
         }
 
         // send notification to customer [order confirmation]

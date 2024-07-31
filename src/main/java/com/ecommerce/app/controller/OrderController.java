@@ -20,7 +20,8 @@ public class OrderController {
 
     @PostMapping
     public AppResponse<OrderResponse> createOrder(@Valid @RequestBody OrderRequest request) {
-        return AppResponse.created(orderService.createOrder(request));
+        OrderResponse order = orderService.createOrder(request);
+        return AppResponse.created(order, order.requestId());
     }
 
     @PostMapping("/filter")
