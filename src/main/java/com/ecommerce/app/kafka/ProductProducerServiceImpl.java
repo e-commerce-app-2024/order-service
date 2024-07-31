@@ -1,6 +1,5 @@
 package com.ecommerce.app.kafka;
 
-import com.ecommerce.app.dto.OrderConfirmation;
 import com.ecommerce.app.enums.KafkaTopicName;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -13,17 +12,17 @@ import org.springframework.stereotype.Service;
 @Service
 @Log4j2
 @RequiredArgsConstructor
-public class OrderProducerServiceImpl implements OrderProducerService {
+public class ProductProducerServiceImpl implements ProductProducerService {
 
-    private final KafkaTemplate<String, OrderConfirmation> kafkaTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
 
     @Override
-    public void sendOrderConfirmation(OrderConfirmation orderConfirmation) {
-        log.info("send order confirmation with body: <{}>", orderConfirmation);
+    public void rollbackPurchaseProduct(String requestId) {
+        log.info("start rollback purchase product process for requestId: <{}>", requestId);
         try {
             Message message = MessageBuilder
-                    .withPayload(orderConfirmation)
-                    .setHeader(KafkaHeaders.TOPIC, KafkaTopicName.ORDER).build();
+                    .withPayload(requestId)
+                    .setHeader(KafkaHeaders.TOPIC, KafkaTopicName.ROLLBACK_PURCHASE).build();
             kafkaTemplate.send(message);
         } catch (Exception ex) {
             log.error(ex);

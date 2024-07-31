@@ -10,6 +10,7 @@ import com.ecommerce.app.integration.product.adapter.ProductAdapter;
 import com.ecommerce.app.integration.product.model.ProductPurchaseResponse;
 import com.ecommerce.app.integration.product.model.PurchaseResponse;
 import com.ecommerce.app.kafka.OrderProducerService;
+import com.ecommerce.app.kafka.ProductProducerService;
 import com.ecommerce.app.mapper.OrderMapper;
 import com.ecommerce.app.model.OrderEntity;
 import com.ecommerce.app.payload.PageResponse;
@@ -37,6 +38,7 @@ public class OrderServiceImpl implements OrderService {
     private final PaymentAdapter paymentAdapter;
     private final ProductAdapter productAdapter;
     private final OrderProducerService orderProducerService;
+    private final ProductProducerService productProducerService;
 
     @Override
     @Transactional
@@ -66,6 +68,8 @@ public class OrderServiceImpl implements OrderService {
                 .build();
         boolean paymentStatus = paymentAdapter.doPayment(paymentRequest);
         if (!paymentStatus) {
+            // rollback purchaseProduct
+            productProducerService.rollbackPurchaseProduct(purchaseRes.requestId());
             throw new PaymentFailureException("payment process failed");
         }
 
