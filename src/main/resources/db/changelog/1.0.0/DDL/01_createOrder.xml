@@ -8,12 +8,13 @@
         <sql>
             CREATE TABLE CUSTOMER_ORDERS
             (
-                ID               INT8           NOT NULL,
-                CUSTOMER_ID      VARCHAR(255)   NOT NULL,
-                REFERENCE        VARCHAR(255)   NOT NULL,
-                REQUEST_ID       VARCHAR(255)   NOT NULL,
-                TOTAL_AMOUNT     NUMERIC(38, 2) NOT NULL,
-                PAYMENT_METHOD   VARCHAR(255)   NOT NULL,
+                ID               INT8         NOT NULL,
+                CUSTOMER_ID      VARCHAR(255) NOT NULL,
+                REFERENCE        VARCHAR(255) NOT NULL,
+                TOTAL_AMOUNT     NUMERIC(38, 2),
+                PAYMENT_METHOD   VARCHAR(255),
+                STATUS           VARCHAR(255) NOT NULL,
+                REQUEST_ID       VARCHAR(255),
                 CREATED_BY       INT8,
                 LAST_MODIFIED_BY INT8,
                 CREATED_AT       TIMESTAMP(6) DEFAULT CURRENT_DATE,

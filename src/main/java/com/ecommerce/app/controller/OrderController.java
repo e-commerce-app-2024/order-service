@@ -29,19 +29,9 @@ public class OrderController {
         return AppResponse.ok(orderService.getCustomerOrders(request));
     }
 
-    @PutMapping("/{id}")
-    public AppResponse<OrderResponse> updateOrder(@PathVariable Long id, @Valid @RequestBody OrderRequest orderRequest) {
-        return AppResponse.ok(orderService.updateOrder(id, orderRequest));
-    }
-
     @GetMapping("/{id}")
     public AppResponse<OrderResponse> getOrder(@PathVariable Long id) {
         return AppResponse.ok(orderService.getOrder(id));
     }
 
-    @DeleteMapping("/{id}")
-    public AppResponse<Void> deleteOrder(@PathVariable Long id) {
-        orderService.deleteOrder(id);
-        return AppResponse.noContent();
-    }
 }

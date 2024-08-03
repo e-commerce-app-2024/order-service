@@ -12,7 +12,7 @@ import java.util.List;
 public record OrderConfirmation(
         String orderReference,
         BigDecimal totalAmount,
-        PaymentMethod PaymentMethod,
+        PaymentMethod paymentMethod,
         CustomerResponse customer,
         List<ProductPurchaseResponse> products
 ) {

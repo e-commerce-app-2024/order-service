@@ -1,6 +1,7 @@
 package com.ecommerce.app.model;
 
 
+import com.ecommerce.app.enums.OrderStatusEnum;
 import com.ecommerce.app.enums.PaymentMethod;
 import jakarta.persistence.*;
 import lombok.*;
@@ -27,6 +28,8 @@ public class OrderEntity extends EntityBase {
     private BigDecimal totalAmount;
     @Enumerated(EnumType.STRING)
     private PaymentMethod paymentMethod;
+    @Enumerated(EnumType.STRING)
+    private OrderStatusEnum status;
     @OneToMany(mappedBy = "order")
     private List<OrderLineEntity> orderLines;
 }

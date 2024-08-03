@@ -1,5 +1,6 @@
 package com.ecommerce.app.dto;
 
+import com.ecommerce.app.enums.OrderStatusEnum;
 import com.ecommerce.app.enums.PaymentMethod;
 import lombok.Builder;
 
@@ -11,6 +12,7 @@ public record OrderResponse(
         String customerId,
         String reference,
         BigDecimal totalAmount,
+        OrderStatusEnum status,
         PaymentMethod paymentMethod,
         String requestId
 ) {

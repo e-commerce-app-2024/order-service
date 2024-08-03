@@ -11,9 +11,6 @@ public interface OrderService {
 
     PageResponse<OrderResponse> getCustomerOrders(OrderFilterRequest request);
 
-    OrderResponse updateOrder(Long id, OrderRequest orderRequest);
-
     OrderResponse getOrder(Long id);
 
-    void deleteOrder(Long id);
 }

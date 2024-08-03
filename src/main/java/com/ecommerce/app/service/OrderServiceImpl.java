@@ -1,9 +1,12 @@
 package com.ecommerce.app.service;
 
 import com.ecommerce.app.dto.*;
+import com.ecommerce.app.enums.OrderStatusEnum;
+import com.ecommerce.app.enums.PaymentMethod;
 import com.ecommerce.app.exception.OrderNotFoundException;
 import com.ecommerce.app.exception.PaymentFailureException;
 import com.ecommerce.app.integration.customer.adapter.CustomerAdapter;
+import com.ecommerce.app.integration.customer.model.CustomerResponse;
 import com.ecommerce.app.integration.payment.adapter.PaymentAdapter;
 import com.ecommerce.app.integration.payment.model.PaymentRequest;
 import com.ecommerce.app.integration.product.adapter.ProductAdapter;
@@ -15,7 +18,6 @@ import com.ecommerce.app.mapper.OrderMapper;
 import com.ecommerce.app.model.OrderEntity;
 import com.ecommerce.app.payload.PageResponse;
 import com.ecommerce.app.repo.OrderRepo;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -41,50 +43,68 @@ public class OrderServiceImpl implements OrderService {
     private final ProductProducerService productProducerService;
 
     @Override
-    @Transactional
     public OrderResponse createOrder(OrderRequest request) {
 
         // check the customer
         var customer = this.customerAdapter.findCustomer(request.customerId());
 
+        // persist the order
+        OrderEntity orderEntity = saveOrder(request, customer.id(), OrderStatusEnum.PENDING);
+
         // purchase the product
         var purchaseRes = this.productAdapter.purchaseProduct(request.products());
 
-        // persist the order
-        OrderEntity orderEntity = saveOrder(request, purchaseRes);
+        // update order purchase [PURCHASING]
+        orderEntity = updateOrderPurchase(orderEntity, OrderStatusEnum.PURCHASING, purchaseRes);
 
         // persist the order line
         saveOrderLine(purchaseRes.products(), orderEntity);
 
-        // prepare the total amount
-        BigDecimal totalAmount = getTotalAmount(purchaseRes.products());
+        // update order status [PENDING_PAYMENT]
+        updateOrderStatus(orderEntity, OrderStatusEnum.PENDING_PAYMENT);
+
         // start the payment process
-        PaymentRequest paymentRequest = PaymentRequest.builder()
-                .paymentMethod(request.paymentMethod())
-                .amount(totalAmount)
-                .customerId(customer.id())
-                .orderId(orderEntity.getId())
-                .orderReference(orderEntity.getReference())
-                .build();
-        boolean paymentStatus = paymentAdapter.doPayment(paymentRequest);
-        if (!paymentStatus) {
-            // rollback purchaseProduct
+        boolean paymentStatus = startPayment(request.paymentMethod(), getTotalAmount(purchaseRes.products()), customer.id(), orderEntity);
+        if (paymentStatus) {
+            // update order payment [PAID]
+            updateOrderPayment(orderEntity, request.paymentMethod(), OrderStatusEnum.PAID);
+        } else {
+            // rollback purchase product
+            updateOrderStatus(orderEntity, OrderStatusEnum.PAYMENT_FAILED);
             productProducerService.rollbackPurchaseProduct(purchaseRes.requestId());
             throw new PaymentFailureException("payment process failed", purchaseRes.requestId());
         }
 
         // send notification to customer [order confirmation]
+        sendOrderConfirmation(orderEntity, customer, purchaseRes);
+
+        // update order status [APPROVED]
+        updateOrderStatus(orderEntity, OrderStatusEnum.APPROVED);
+        return orderMapper.toResponse(orderEntity);
+    }
+
+    private boolean startPayment(PaymentMethod paymentMethod, BigDecimal totalAmount, String customerId, OrderEntity orderEntity) {
+        PaymentRequest paymentRequest = PaymentRequest.builder()
+                .paymentMethod(paymentMethod)
+                .amount(totalAmount)
+                .customerId(customerId)
+                .orderId(orderEntity.getId())
+                .orderReference(orderEntity.getReference())
+                .build();
+        return paymentAdapter.doPayment(paymentRequest);
+    }
+
+    private void sendOrderConfirmation(OrderEntity orderEntity, CustomerResponse customer, PurchaseResponse purchaseRes) {
+        BigDecimal totalAmount = getTotalAmount(purchaseRes.products());
         OrderConfirmation orderConfirmation = OrderConfirmation
                 .builder()
                 .orderReference(orderEntity.getReference())
                 .customer(customer)
-                .PaymentMethod(orderEntity.getPaymentMethod())
+                .paymentMethod(orderEntity.getPaymentMethod())
                 .products(purchaseRes.products())
                 .totalAmount(totalAmount)
                 .build();
         this.orderProducerService.sendOrderConfirmation(orderConfirmation);
-
-        return orderMapper.toResponse(orderEntity);
     }
 
     @Override
@@ -101,11 +121,29 @@ public class OrderServiceImpl implements OrderService {
                         all.getTotalPages());
     }
 
-    private OrderEntity saveOrder(OrderRequest request, PurchaseResponse purchaseResponse) {
+    private OrderEntity saveOrder(OrderRequest request, String customerId, OrderStatusEnum status) {
         OrderEntity orderEntity = this.orderMapper.toOrder(request);
-        orderEntity.setTotalAmount(getTotalAmount(purchaseResponse.products()));
         orderEntity.setReference(UUID.randomUUID().toString());
+        orderEntity.setCustomerId(customerId);
+        orderEntity.setStatus(status);
+        return this.orderRepo.save(orderEntity);
+    }
+
+    private OrderEntity updateOrderPurchase(OrderEntity orderEntity, OrderStatusEnum status, PurchaseResponse purchaseResponse) {
+        orderEntity.setTotalAmount(getTotalAmount(purchaseResponse.products()));
         orderEntity.setRequestId(purchaseResponse.requestId());
+        orderEntity.setStatus(status);
+        return this.orderRepo.save(orderEntity);
+    }
+
+    private OrderEntity updateOrderStatus(OrderEntity orderEntity, OrderStatusEnum status) {
+        orderEntity.setStatus(status);
+        return this.orderRepo.save(orderEntity);
+    }
+
+    private OrderEntity updateOrderPayment(OrderEntity orderEntity, PaymentMethod paymentMethod, OrderStatusEnum status) {
+        orderEntity.setPaymentMethod(paymentMethod);
+        orderEntity.setStatus(status);
         return this.orderRepo.save(orderEntity);
     }
 
@@ -124,12 +162,7 @@ public class OrderServiceImpl implements OrderService {
 
     private BigDecimal getTotalAmount(List<ProductPurchaseResponse> productPurchaseResponses) {
         double sum = productPurchaseResponses.stream().mapToDouble(response -> response.totalPrice().doubleValue()).sum();
-        return new BigDecimal(sum);
-    }
-
-    @Override
-    public OrderResponse updateOrder(Long id, OrderRequest orderRequest) {
-        return null;
+        return new BigDecimal(sum).setScale(2, BigDecimal.ROUND_HALF_UP);
     }
 
     @Override
@@ -139,8 +172,4 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new OrderNotFoundException(id));
     }
 
-    @Override
-    public void deleteOrder(Long id) {
-
-    }
 }
