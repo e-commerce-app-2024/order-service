@@ -57,9 +57,6 @@ public class OrderServiceImpl implements OrderService {
         // update order purchase [PURCHASING]
         orderEntity = updateOrderPurchase(orderEntity, OrderStatusEnum.PURCHASING, purchaseRes);
 
-        // persist the order line
-        saveOrderLine(purchaseRes.products(), orderEntity);
-
         // update order status [PENDING_PAYMENT]
         updateOrderStatus(orderEntity, OrderStatusEnum.PENDING_PAYMENT);
 
@@ -67,6 +64,7 @@ public class OrderServiceImpl implements OrderService {
         boolean paymentStatus = startPayment(request.paymentMethod(), getTotalAmount(purchaseRes.products()), customer.id(), orderEntity);
         if (paymentStatus) {
             // update order payment [PAID]
+            productProducerService.deletePurchaseLog(purchaseRes.requestId());
             updateOrderPayment(orderEntity, request.paymentMethod(), OrderStatusEnum.PAID);
         } else {
             // rollback purchase product
@@ -74,6 +72,9 @@ public class OrderServiceImpl implements OrderService {
             productProducerService.rollbackPurchaseProduct(purchaseRes.requestId());
             throw new PaymentFailureException("payment process failed", purchaseRes.requestId());
         }
+
+        // persist the order line
+        saveOrderLine(purchaseRes.products(), orderEntity);
 
         // send notification to customer [order confirmation]
         sendOrderConfirmation(orderEntity, customer, purchaseRes);
@@ -149,11 +150,11 @@ public class OrderServiceImpl implements OrderService {
 
     private void saveOrderLine(List<ProductPurchaseResponse> productPurchaseRes, OrderEntity orderEntity) {
         List<OrderLine> orderLineList = new ArrayList<>();
-        productPurchaseRes.stream().forEach(productPurchase -> {
+        productPurchaseRes.stream().forEach(product -> {
             var orderLine = OrderLine
                     .builder()
-                    .productId(productPurchase.id())
-                    .quantity(productPurchase.quantity())
+                    .productId(product.id())
+                    .quantity(product.quantity())
                     .build();
             orderLineList.add(orderLine);
         });

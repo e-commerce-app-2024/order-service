@@ -28,4 +28,17 @@ public class ProductProducerServiceImpl implements ProductProducerService {
             log.error(ex);
         }
     }
+
+    @Override
+    public void deletePurchaseLog(String requestId) {
+        log.info("start delete purchase log process for requestId: <{}>", requestId);
+        try {
+            Message message = MessageBuilder
+                    .withPayload(requestId)
+                    .setHeader(KafkaHeaders.TOPIC, KafkaTopicName.DELETE_PURCHASE).build();
+            kafkaTemplate.send(message);
+        } catch (Exception ex) {
+            log.error(ex);
+        }
+    }
 }

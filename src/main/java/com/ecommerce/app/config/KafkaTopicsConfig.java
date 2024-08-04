@@ -6,20 +6,26 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 @Configuration
 public class KafkaTopicsConfig {
 
-    @Bean
-    public NewTopic createOrderTopic() {
-        return TopicBuilder
-                .name(KafkaTopicName.ORDER)
-                .build();
-    }
+    final List<String> topicList = Arrays.asList(KafkaTopicName.ORDER, KafkaTopicName.ROLLBACK_PURCHASE, KafkaTopicName.DELETE_PURCHASE);
 
     @Bean
-    public NewTopic createRollbackPurchaseTopic() {
-        return TopicBuilder
-                .name(KafkaTopicName.ROLLBACK_PURCHASE)
-                .build();
+    public List<NewTopic> createTopicList() {
+        List<NewTopic> newTopics = new ArrayList<>();
+        topicList.forEach(topic -> {
+            NewTopic newTopic = TopicBuilder
+                    .name(topic)
+                    .partitions(1)
+                    .replicas(1)
+                    .build();
+            newTopics.add(newTopic);
+        });
+        return newTopics;
     }
 }
