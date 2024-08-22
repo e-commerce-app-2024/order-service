@@ -18,8 +18,14 @@ public class ProductProducerServiceImpl implements ProductProducerService {
     private final KafkaTemplate<String, String> kafkaTemplate;
 
     @Override
-    public void rollbackPurchaseProduct(PurchaseResponse purchaseResponse) {
-        log.info("start rollback purchase product process for : <{}>", purchaseResponse);
+    public void rollbackPurchaseProduct(PurchaseResponse response, String userName) {
+        log.info("start rollback purchase product process for : <{}>", response);
+        PurchaseResponse purchaseResponse = PurchaseResponse.builder()
+                .products(response.products())
+                .requestId(response.requestId())
+                .userName(userName)
+                .token(response.token())
+                .build();
         try {
             Message message = MessageBuilder
                     .withPayload(purchaseResponse)

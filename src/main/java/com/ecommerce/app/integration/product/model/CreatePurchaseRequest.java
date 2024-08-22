@@ -10,6 +10,7 @@ import java.util.List;
 @Builder
 public record CreatePurchaseRequest(
         @Valid
-        List<ProductPurchaseRequest> purchaseList
+        List<ProductPurchaseRequest> purchaseList,
+        String userName
 ) {
 }

@@ -4,6 +4,6 @@ import com.ecommerce.app.integration.product.model.PurchaseResponse;
 
 public interface ProductProducerService {
 
-    void rollbackPurchaseProduct(PurchaseResponse purchaseResponse);
+    void rollbackPurchaseProduct(PurchaseResponse purchaseResponse, String userName);
 
 }

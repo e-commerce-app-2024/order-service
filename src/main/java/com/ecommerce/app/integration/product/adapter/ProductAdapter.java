@@ -18,10 +18,11 @@ public class ProductAdapter {
 
     private final ProductClient productClient;
 
-    public PurchaseResponse purchaseProduct(List<ProductPurchaseRequest> purchaseList) {
+    public PurchaseResponse purchaseProduct(List<ProductPurchaseRequest> purchaseList, String userName) {
         var purchaseRequest = CreatePurchaseRequest
                 .builder()
                 .purchaseList(purchaseList)
+                .userName(userName)
                 .build();
         AppResponse<PurchaseResponse> appResponse = productClient.purchaseProduct(purchaseRequest);
         if (appResponse.success()) {

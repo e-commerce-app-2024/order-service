@@ -52,7 +52,7 @@ public class OrderServiceImpl implements OrderService {
         OrderEntity orderEntity = saveOrder(request, customer.id(), OrderStatusEnum.PENDING);
 
         // purchase the product
-        var purchaseRes = this.productAdapter.purchaseProduct(request.products());
+        var purchaseRes = this.productAdapter.purchaseProduct(request.products(), customer.email());
 
         // update order purchase [PURCHASING]
         orderEntity = updateOrderPurchase(orderEntity, OrderStatusEnum.PURCHASING, purchaseRes);
@@ -68,7 +68,7 @@ public class OrderServiceImpl implements OrderService {
         } else {
             // rollback purchase product
             updateOrderStatus(orderEntity, OrderStatusEnum.PAYMENT_FAILED);
-            productProducerService.rollbackPurchaseProduct(purchaseRes);
+            productProducerService.rollbackPurchaseProduct(purchaseRes, customer.email());
             throw new PaymentFailureException("payment process failed", purchaseRes.requestId());
         }
 
