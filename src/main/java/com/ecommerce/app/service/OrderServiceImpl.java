@@ -64,12 +64,11 @@ public class OrderServiceImpl implements OrderService {
         boolean paymentStatus = startPayment(request.paymentMethod(), getTotalAmount(purchaseRes.products()), customer.id(), orderEntity);
         if (paymentStatus) {
             // update order payment [PAID]
-            productProducerService.deletePurchaseLog(purchaseRes.requestId());
             updateOrderPayment(orderEntity, request.paymentMethod(), OrderStatusEnum.PAID);
         } else {
             // rollback purchase product
             updateOrderStatus(orderEntity, OrderStatusEnum.PAYMENT_FAILED);
-            productProducerService.rollbackPurchaseProduct(purchaseRes.requestId());
+            productProducerService.rollbackPurchaseProduct(purchaseRes);
             throw new PaymentFailureException("payment process failed", purchaseRes.requestId());
         }
 

@@ -13,7 +13,7 @@ import java.util.List;
 @Configuration
 public class KafkaTopicsConfig {
 
-    final List<String> topicList = Arrays.asList(KafkaTopicName.ORDER, KafkaTopicName.ROLLBACK_PURCHASE, KafkaTopicName.DELETE_PURCHASE);
+    final List<String> topicList = Arrays.asList(KafkaTopicName.ORDER, KafkaTopicName.ROLLBACK_PURCHASE);
 
     @Bean
     public List<NewTopic> createTopicList() {
@@ -21,7 +21,7 @@ public class KafkaTopicsConfig {
         topicList.forEach(topic -> {
             NewTopic newTopic = TopicBuilder
                     .name(topic)
-                    .partitions(1)
+                    .partitions(12)
                     .replicas(1)
                     .build();
             newTopics.add(newTopic);

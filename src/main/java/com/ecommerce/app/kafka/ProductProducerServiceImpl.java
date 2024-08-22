@@ -1,6 +1,7 @@
 package com.ecommerce.app.kafka;
 
 import com.ecommerce.app.enums.KafkaTopicName;
+import com.ecommerce.app.integration.product.model.PurchaseResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -17,11 +18,11 @@ public class ProductProducerServiceImpl implements ProductProducerService {
     private final KafkaTemplate<String, String> kafkaTemplate;
 
     @Override
-    public void rollbackPurchaseProduct(String requestId) {
-        log.info("start rollback purchase product process for requestId: <{}>", requestId);
+    public void rollbackPurchaseProduct(PurchaseResponse purchaseResponse) {
+        log.info("start rollback purchase product process for : <{}>", purchaseResponse);
         try {
             Message message = MessageBuilder
-                    .withPayload(requestId)
+                    .withPayload(purchaseResponse)
                     .setHeader(KafkaHeaders.TOPIC, KafkaTopicName.ROLLBACK_PURCHASE).build();
             kafkaTemplate.send(message);
         } catch (Exception ex) {
@@ -29,16 +30,4 @@ public class ProductProducerServiceImpl implements ProductProducerService {
         }
     }
 
-    @Override
-    public void deletePurchaseLog(String requestId) {
-        log.info("start delete purchase log process for requestId: <{}>", requestId);
-        try {
-            Message message = MessageBuilder
-                    .withPayload(requestId)
-                    .setHeader(KafkaHeaders.TOPIC, KafkaTopicName.DELETE_PURCHASE).build();
-            kafkaTemplate.send(message);
-        } catch (Exception ex) {
-            log.error(ex);
-        }
-    }
 }
