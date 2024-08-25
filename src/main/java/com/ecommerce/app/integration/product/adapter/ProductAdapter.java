@@ -8,6 +8,9 @@ import com.ecommerce.app.integration.product.model.ProductInfoResponse;
 import com.ecommerce.app.integration.product.model.PurchaseResponse;
 import com.ecommerce.app.payload.AppResponse;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,6 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProductAdapter {
 
+    private static final Logger log = LoggerFactory.getLogger(ProductAdapter.class);
     private final ProductClient productClient;
 
     public PurchaseResponse purchaseProduct(List<ProductPurchaseRequest> purchaseList, String userName) {
@@ -33,7 +37,9 @@ public class ProductAdapter {
         }
     }
 
+    @Cacheable(value = "productsInfo", key = "#ids")
     public List<ProductInfoResponse> getProductsInfo(List<Long> ids) {
+        log.info("getProductsInfo from product service for IDs {}", ids);
         AppResponse<List<ProductInfoResponse>> appResponse = productClient.getProductsInfo(ids);
         if (appResponse.success()) {
             return appResponse.payload();
